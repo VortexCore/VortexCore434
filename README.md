@@ -1,30 +1,29 @@
-# ![logo](http://www.trinitycore.org/f/public/style_images/1_trinitycore.png) TrinityCore
+# ![logo](http://cpcretrodev.byterealms.com/wp-content/uploads/2014/11/logo_vortex.png) VortexCore
 
-[![Issue Stats](http://www.issuestats.com/github/TrinityCore/TrinityCore/badge/issue)](http://www.issuestats.com/github/TrinityCore/TrinityCore) [![Issue Stats](http://www.issuestats.com/github/TrinityCore/TrinityCore/badge/pr)](http://www.issuestats.com/github/TrinityCore/TrinityCore) [![Bountysource](https://www.bountysource.com/badge/tracker?tracker_id=1310)](https://www.bountysource.com/trackers/1310-trinity-core?utm_source=1310&utm_medium=shield&utm_campaign=TRACKER_BADGE)
+[![Issue Stats](http://www.issuestats.com/github/VortexCore/VortexCore434/badge/issue)](http://www.issuestats.com/github/VortexCore/VortexCore434) [![Issue Stats](http://www.issuestats.com/github/VortexCore/VortexCore434/badge/pr)](http://www.issuestats.com/github/VortexCore/VortexCore434)
 
 ## Build Status
 
-6.x | 4.3.4 | 3.3.5
-:------------: | :------------: | :------------:
-[![6.x Build Status](https://travis-ci.org/TrinityCore/TrinityCore.svg?branch=6.x)](https://travis-ci.org/TrinityCore/TrinityCore) | [![4.3.4 Build Status](https://travis-ci.org/TrinityCore/TrinityCore.svg?branch=4.3.4)](https://travis-ci.org/TrinityCore/TrinityCore) | [![3.3.5 Build Status](https://travis-ci.org/TrinityCore/TrinityCore.svg?branch=3.3.5)](https://travis-ci.org/TrinityCore/TrinityCore)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/435/badge.svg)](https://scan.coverity.com/projects/435) | [![Coverity Scan Build Status](https://scan.coverity.com/projects/435/badge.svg)](https://scan.coverity.com/projects/5354) |  [![Coverity Scan Build Status](https://scan.coverity.com/projects/4656/badge.svg)](https://scan.coverity.com/projects/4656)
+4.3.4 |
+:------------:
+[![4.3.4 Build Status](https://travis-ci.org/TrinityCore/TrinityCore.svg?branch=4.3.4)](https://travis-ci.org/TrinityCore/TrinityCore) 
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/435/badge.svg)](https://scan.coverity.com/projects/5354)
 
 ## Introduction
 
-TrinityCore is a *MMORPG* Framework based mostly in C++.
+VortexCore is a *MMORPG* Framework based mostly in C++.
 
-It is derived from *MaNGOS*, the *Massive Network Game Object Server*, and is
-based on the code of that project with extensive changes over time to optimize,
+It is derived from *TrinityCore* and *MaNGOS*, the *Massive Network Game Object Server*, and is
+based on the code of that projects with extensive changes over time to optimize,
 improve and cleanup the codebase at the same time as improving the in-game
 mechanics and functionality.
 
 It is completely open source; community involvement is highly encouraged.
 
 If you wish to contribute ideas or code please visit our site linked below or
-make pull requests to our [Github repository](https://github.com/TrinityCore/TrinityCore).
+make pull requests to our [Github repository](https://github.com/VortexCore/VortexCore434).
 
-For further information on the TrinityCore project, please visit our project
-website at [TrinityCore.org](http://www.trinitycore.org).
+For further information of VortexCore project, please contact us via email.
 
 ## Requirements
 
@@ -46,7 +45,7 @@ Windows, Linux and Mac OSX.
 
 ## Reporting issues
 
-Issues can be reported via the [Github issue tracker](https://github.com/TrinityCore/TrinityCore/issues?labels=Branch-3.3.5a).
+Issues can be reported via the [Github issue tracker](https://github.com/VortexCore/VortexCore434/issues?labels=Branch-4.3.4).
 
 Please take the time to review existing issues before submitting your own to
 prevent duplicates.

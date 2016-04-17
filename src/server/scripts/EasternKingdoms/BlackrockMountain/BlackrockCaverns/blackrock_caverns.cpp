@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -108,7 +108,7 @@ public: npc_twilight_flame_caller() : CreatureScript("npc_twilight_flame_caller"
 
         struct npc_twilight_flame_callerAI : public ScriptedAI
         {
-            npc_twilight_flame_callerAI(Creature* creature) : ScriptedAI(creature), _summons(me), _instance(creature->GetInstanceScript())
+            npc_twilight_flame_callerAI(Creature* creature) : ScriptedAI(creature), _instance(creature->GetInstanceScript()), _summons(me)
             {
                 Initialize();
             }
@@ -213,7 +213,7 @@ public: npc_twilight_flame_caller() : CreatureScript("npc_twilight_flame_caller"
             ObjectGuid      _flamecaller1GUID;
             ObjectGuid      _flamecaller2GUID;
             SummonList      _summons;
-            bool            _combatPhase;
+            bool _combatPhase =false;
         };
 
         CreatureAI* GetAI(Creature* creature) const override

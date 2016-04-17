@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,32 +24,34 @@
 namespace zmqpp
 {
     class socket;
+    class message;
 }
 
-namespace Battlenet
+namespace IPC
 {
-    class ServerManager
+    namespace BattlenetComm
     {
-        ServerManager() : _socket(nullptr) { }
-
-    public:
-        void InitializeConnection();
-        void CloseConnection();
-
-        static ServerManager& Instance()
+        class ServerManager
         {
-            static ServerManager instance;
-            return instance;
-        }
+            ServerManager() : _socket(nullptr) { }
 
-        void SendChangeToonOnlineState(uint32 battlenetAccountId, uint32 gameAccountId, ObjectGuid guid, std::string const& name, bool online);
+        public:
+            void InitializeConnection();
+            void CloseConnection();
 
-    private:
-        static Header CreateHeader(BnetCommands command);
-        ZmqMux* _socket;
-    };
+            static ServerManager& Instance();
+
+            void SendChangeToonOnlineState(uint32 battlenetAccountId, uint32 gameAccountId, ObjectGuid guid, std::string const& name, bool online);
+
+        private:
+            void Send(zmqpp::message* msg);
+
+            static Header CreateHeader(BnetCommands command);
+            ZmqMux* _socket;
+        };
+    }
 }
 
-#define sBattlenetServer Battlenet::ServerManager::Instance()
+#define sBattlenetServer IPC::BattlenetComm::ServerManager::Instance()
 
 #endif // BattlenetMgr_h__

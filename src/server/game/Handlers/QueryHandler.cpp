@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -17,24 +17,21 @@
  */
 
 #include "Common.h"
-#include "Language.h"
 #include "DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-#include "Opcodes.h"
 #include "Log.h"
 #include "World.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "UpdateMask.h"
 #include "NPCHandler.h"
-#include "Pet.h"
 #include "MapManager.h"
 
 void WorldSession::SendNameQueryOpcode(ObjectGuid guid)
 {
     Player* player = ObjectAccessor::FindConnectedPlayer(guid);
-    CharacterNameData const* nameData = sWorld->GetCharacterNameData(guid);
+    CharacterInfo const* nameData = sWorld->GetCharacterInfo(guid);
 
     WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8+1+1+1+1+1+10));
     data << guid.WriteAsPacked();
@@ -46,11 +43,11 @@ void WorldSession::SendNameQueryOpcode(ObjectGuid guid)
     }
 
     data << uint8(0);                               // name known
-    data << nameData->m_name;                       // played name
+    data << nameData->Name;                         // played name
     data << uint8(0);                               // realm name - only set for cross realm interaction (such as Battlegrounds)
-    data << uint8(nameData->m_race);
-    data << uint8(nameData->m_gender);
-    data << uint8(nameData->m_class);
+    data << uint8(nameData->Race);
+    data << uint8(nameData->Sex);
+    data << uint8(nameData->Class);
 
     if (DeclinedName const* names = (player ? player->GetDeclinedNames() : NULL))
     {
@@ -99,10 +96,10 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recvData)
     CreatureTemplate const* creatureInfo = sObjectMgr->GetCreatureTemplate(entry);
     if (creatureInfo)
     {
-        std::string Name, FemaleName, SubName;
+        std::string Name, FemaleName, Title;
         Name = creatureInfo->Name;
         FemaleName = creatureInfo->FemaleName;
-        SubName = creatureInfo->SubName;
+        Title = creatureInfo->Title;
 
         LocaleConstant locale = GetSessionDbLocaleIndex();
         if (locale >= 0)
@@ -111,7 +108,7 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recvData)
             {
                 ObjectMgr::GetLocaleString(creatureLocale->Name, locale, Name);
                 ObjectMgr::GetLocaleString(creatureLocale->FemaleName, locale, FemaleName);
-                ObjectMgr::GetLocaleString(creatureLocale->SubName, locale, SubName);
+                ObjectMgr::GetLocaleString(creatureLocale->Title, locale, Title);
             }
         }
 
@@ -129,7 +126,7 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recvData)
         for (uint8 i = 0; i < 3; i++)
             data << uint8(0);                                         // name5, ..., name8
 
-        data << SubName;                                              // SubName
+        data << Title;                                                // Title
         data << creatureInfo->IconName;                               // "Directions" for guard, string for Icons 2.3.0
         data << uint32(creatureInfo->type_flags);                     // flags
         data << uint32(creatureInfo->type_flags2);                    // unknown meaning
@@ -145,10 +142,6 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recvData)
         data << float(creatureInfo->ModHealth);                       // dmg/hp modifier
         data << float(creatureInfo->ModMana);                         // dmg/mana modifier
         data << uint8(creatureInfo->RacialLeader);                    // RacialLeader
-
-        for (uint8 i = 0; i < MAX_CREATURE_QUEST_ITEMS; ++i)
-            data << uint32(creatureInfo->questItems[i]);              // itemId[6], quest drop
-
         data << uint32(creatureInfo->movementId);                     // CreatureMovementInfo.dbc
         data << uint32(creatureInfo->expansionUnknown);               // unknown meaning
 
@@ -188,15 +181,14 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recvData)
         IconName = info->IconName;
         CastBarCaption = info->castBarCaption;
 
-        int loc_idx = GetSessionDbLocaleIndex();
-        if (loc_idx >= 0)
-        {
-            if (GameObjectLocale const* gl = sObjectMgr->GetGameObjectLocale(entry))
+        LocaleConstant localeConstant = GetSessionDbLocaleIndex();
+        if (localeConstant >= LOCALE_enUS)
+            if (GameObjectLocale const* gameObjectLocale = sObjectMgr->GetGameObjectLocale(entry))
             {
-                ObjectMgr::GetLocaleString(gl->Name, loc_idx, Name);
-                ObjectMgr::GetLocaleString(gl->CastBarCaption, loc_idx, CastBarCaption);
+                ObjectMgr::GetLocaleString(gameObjectLocale->Name, localeConstant, Name);
+                ObjectMgr::GetLocaleString(gameObjectLocale->CastBarCaption, localeConstant, CastBarCaption);
             }
-        }
+
         TC_LOG_DEBUG("network", "WORLD: CMSG_GAMEOBJECT_QUERY '%s' - Entry: %u. ", info->name.c_str(), entry);
         WorldPacket data (SMSG_GAMEOBJECT_QUERY_RESPONSE, 150);
         data << uint32(entry);
@@ -209,8 +201,7 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recvData)
         data << info->unk1;                                 // 2.0.3, string
         data.append(info->raw.data, MAX_GAMEOBJECT_DATA);
         data << float(info->size);                          // go size
-        for (uint32 i = 0; i < MAX_GAMEOBJECT_QUEST_ITEMS; ++i)
-            data << uint32(info->questItems[i]);            // itemId[6], quest drop
+
         data << int32(info->unkInt32);                      // 4.x, unknown
         SendPacket(&data);
         TC_LOG_DEBUG("network", "WORLD: Sent SMSG_GAMEOBJECT_QUERY_RESPONSE");
@@ -228,11 +219,7 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recvData)
 
 void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recvData*/)
 {
-    TC_LOG_DEBUG("network", "WORLD: Received MSG_CORPSE_QUERY");
-
-    Corpse* corpse = GetPlayer()->GetCorpse();
-
-    if (!corpse)
+    if (!_player->HasCorpse())
     {
         WorldPacket data(MSG_CORPSE_QUERY, 1);
         data << uint8(0);                                   // corpse not found
@@ -240,24 +227,25 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recvData*/)
         return;
     }
 
-    uint32 mapid = corpse->GetMapId();
-    float x = corpse->GetPositionX();
-    float y = corpse->GetPositionY();
-    float z = corpse->GetPositionZ();
-    uint32 corpsemapid = mapid;
+    WorldLocation corpseLocation = _player->GetCorpseLocation();
+    uint32 corpseMapID = corpseLocation.GetMapId();
+    uint32 mapID = corpseLocation.GetMapId();
+    float x = corpseLocation.GetPositionX();
+    float y = corpseLocation.GetPositionY();
+    float z = corpseLocation.GetPositionZ();
 
     // if corpse at different map
-    if (mapid != _player->GetMapId())
+    if (mapID != _player->GetMapId())
     {
         // search entrance map for proper show entrance
-        if (MapEntry const* corpseMapEntry = sMapStore.LookupEntry(mapid))
+        if (MapEntry const* corpseMapEntry = sMapStore.LookupEntry(mapID))
         {
             if (corpseMapEntry->IsDungeon() && corpseMapEntry->entrance_map >= 0)
             {
                 // if corpse map have entrance
                 if (Map const* entranceMap = sMapMgr->CreateBaseMap(corpseMapEntry->entrance_map))
                 {
-                    mapid = corpseMapEntry->entrance_map;
+                    mapID = corpseMapEntry->entrance_map;
                     x = corpseMapEntry->entrance_x;
                     y = corpseMapEntry->entrance_y;
                     z = entranceMap->GetHeight(GetPlayer()->GetPhaseMask(), x, y, MAX_HEIGHT);
@@ -268,11 +256,11 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recvData*/)
 
     WorldPacket data(MSG_CORPSE_QUERY, 1+(6*4));
     data << uint8(1);                                       // corpse found
-    data << int32(mapid);
+    data << int32(mapID);
     data << float(x);
     data << float(y);
     data << float(z);
-    data << int32(corpsemapid);
+    data << int32(corpseMapID);
     data << uint32(0);                                      // unknown
     SendPacket(&data);
 }

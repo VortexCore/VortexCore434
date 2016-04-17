@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -78,8 +78,8 @@ namespace Battlenet
             std::string ToString() const override;
             void CallHandler(Session* session) override;
 
-            uint32 ClientSeed;
-            RealmId Realm;
+            uint32 ClientSeed =0;
+            Battlenet::RealmHandle Realm;
         };
 
         class ListSubscribeResponse final : public ServerPacket
@@ -100,7 +100,7 @@ namespace Battlenet
 
             struct CharacterCountEntry
             {
-                RealmId Realm;
+                Battlenet::RealmHandle Realm;
                 uint32 CharacterCount;
             };
 
@@ -139,7 +139,8 @@ namespace Battlenet
             std::string Version;
             tcp::endpoint Address;
             uint8 Flags;
-            RealmId Id;
+            Battlenet::RealmHandle Id;
+            uint32 Build;
         };
 
         class ListComplete final : public ServerPacket
@@ -164,7 +165,7 @@ namespace Battlenet
             std::string ToString() const override;
 
             std::string Game;
-            RealmId Realm;
+            Battlenet::RealmHandle Realm;
             uint64 Guid;
             std::string Name;
         };

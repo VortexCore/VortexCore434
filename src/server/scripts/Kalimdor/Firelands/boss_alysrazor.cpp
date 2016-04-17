@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -259,11 +259,11 @@ class npc_blazing_monstrosity : public CreatureScript
             {
             }
 
-            void EnterEvadeMode() override
+            void EnterEvadeMode(EvadeReason why) override
             {
                 _summons.DespawnAll();
                 _events.Reset();
-                PassiveAI::EnterEvadeMode();
+                PassiveAI::EnterEvadeMode(why);
             }
 
             void JustDied(Unit* /*killer*/) override
@@ -484,7 +484,7 @@ class npc_egg_pile : public CreatureScript
 
         private:
             EventMap _events;
-            uint32 _callHatchlingSpell;
+            uint32 _callHatchlingSpell =0;
         };
 
         CreatureAI* GetAI(Creature* creature) const override

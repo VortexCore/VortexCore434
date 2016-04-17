@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,7 +22,8 @@ bool Battlenet::SessionManager::StartNetwork(boost::asio::io_service& service, s
     if (!BaseSocketMgr::StartNetwork(service, bindIp, port))
         return false;
 
-    _acceptor->AsyncAcceptManaged(&OnSocketAccept);
+    _acceptor->SetSocketFactory(std::bind(&BaseSocketMgr::GetSocketForAccept, this));
+    _acceptor->AsyncAcceptWithCallback<&OnSocketAccept>();
     return true;
 }
 
@@ -31,9 +32,9 @@ NetworkThread<Battlenet::Session>* Battlenet::SessionManager::CreateThreads() co
     return new NetworkThread<Session>[GetNetworkThreadCount()];
 }
 
-void Battlenet::SessionManager::OnSocketAccept(tcp::socket&& sock)
+void Battlenet::SessionManager::OnSocketAccept(tcp::socket&& sock, uint32 threadIndex)
 {
-    sSessionMgr.OnSocketOpen(std::forward<tcp::socket>(sock));
+    sSessionMgr.OnSocketOpen(std::forward<tcp::socket>(sock), threadIndex);
 }
 
 void Battlenet::SessionManager::AddSession(Session* session)
@@ -46,12 +47,17 @@ void Battlenet::SessionManager::AddSession(Session* session)
 void Battlenet::SessionManager::RemoveSession(Session* session)
 {
     std::unique_lock<boost::shared_mutex> lock(_sessionMutex);
-    _sessions.erase({ session->GetAccountId(), session->GetGameAccountId() });
+    auto itr = _sessions.find({ session->GetAccountId(), session->GetGameAccountId() });
+    // Remove old session only if it was not overwritten by reconnecting
+    if (itr != _sessions.end() && itr->second == session)
+        _sessions.erase(itr);
+
     _sessionsByAccountId[session->GetAccountId()].remove(session);
 }
 
 Battlenet::Session* Battlenet::SessionManager::GetSession(uint32 accountId, uint32 gameAccountId) const
 {
+    boost::shared_lock<boost::shared_mutex> lock(_sessionMutex);
     auto itr = _sessions.find({ accountId, gameAccountId });
     if (itr != _sessions.end())
         return itr->second;
@@ -61,6 +67,7 @@ Battlenet::Session* Battlenet::SessionManager::GetSession(uint32 accountId, uint
 
 std::list<Battlenet::Session*> Battlenet::SessionManager::GetSessions(uint32 accountId) const
 {
+    boost::shared_lock<boost::shared_mutex> lock(_sessionMutex);
     std::list<Session*> sessions;
     auto itr = _sessionsByAccountId.find(accountId);
     if (itr != _sessionsByAccountId.end())

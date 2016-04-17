@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -19,9 +19,11 @@
 #ifndef TRINITY_INSTANCE_DATA_H
 #define TRINITY_INSTANCE_DATA_H
 
+#include <set>
 #include "ZoneScript.h"
 #include "World.h"
 #include "ObjectMgr.h"
+#include "CreatureAI.h"
 
 #define OUT_SAVE_INST_DATA             TC_LOG_DEBUG("scripts", "Saving Instance Data for Instance %s (Map %d, Instance Id %d)", instance->GetMapName(), instance->GetId(), instance->GetInstanceId())
 #define OUT_SAVE_INST_DATA_COMPLETE    TC_LOG_DEBUG("scripts", "Saving Instance Data for Instance %s (Map %d, Instance Id %d) completed.", instance->GetMapName(), instance->GetId(), instance->GetInstanceId())
@@ -68,30 +70,30 @@ enum DoorType
     MAX_DOOR_TYPES
 };
 
-enum BoundaryType
-{
-    BOUNDARY_NONE = 0,
-    BOUNDARY_N,
-    BOUNDARY_S,
-    BOUNDARY_E,
-    BOUNDARY_W,
-    BOUNDARY_NE,
-    BOUNDARY_NW,
-    BOUNDARY_SE,
-    BOUNDARY_SW,
-    BOUNDARY_MAX_X = BOUNDARY_N,
-    BOUNDARY_MIN_X = BOUNDARY_S,
-    BOUNDARY_MAX_Y = BOUNDARY_W,
-    BOUNDARY_MIN_Y = BOUNDARY_E
-};
-
-typedef std::map<BoundaryType, float> BossBoundaryMap;
-
 struct DoorData
 {
     uint32 entry, bossId;
     DoorType type;
-    uint32 boundary;
+};
+
+struct BossBoundaryEntry
+{
+    uint32 BossId;
+    AreaBoundary const* Boundary;
+};
+
+struct BossBoundaryData
+{
+    typedef std::vector<BossBoundaryEntry> StorageType;
+    typedef StorageType::const_iterator const_iterator;
+
+    BossBoundaryData(std::initializer_list<BossBoundaryEntry> data) : _data(data) { }
+    ~BossBoundaryData();
+    const_iterator begin() const { return _data.begin(); }
+    const_iterator end() const { return _data.end(); }
+
+    private:
+        StorageType _data;
 };
 
 struct MinionData
@@ -111,16 +113,15 @@ struct BossInfo
     EncounterState state;
     GuidSet door[MAX_DOOR_TYPES];
     GuidSet minion;
-    BossBoundaryMap boundary;
+    CreatureBoundary boundary;
 };
 
 struct DoorInfo
 {
-    explicit DoorInfo(BossInfo* _bossInfo, DoorType _type, BoundaryType _boundary)
-        : bossInfo(_bossInfo), type(_type), boundary(_boundary) { }
+    explicit DoorInfo(BossInfo* _bossInfo, DoorType _type)
+        : bossInfo(_bossInfo), type(_type) { }
     BossInfo* bossInfo;
     DoorType type;
-    BoundaryType boundary;
 };
 
 struct MinionInfo
@@ -160,7 +161,7 @@ class InstanceScript : public ZoneScript
 
         virtual void Update(uint32 /*diff*/) { }
 
-        // Used by the map's CanEnter function.
+        // Used by the map's CannotEnter function.
         // This is to prevent players from entering during boss encounters.
         virtual bool IsEncounterInProgress() const;
 
@@ -177,11 +178,11 @@ class InstanceScript : public ZoneScript
 
         inline Creature* GetCreature(uint32 type)
         {
-            return ObjectAccessor::GetObjectInMap<Creature>(GetObjectGuid(type), instance, nullptr);
+            return instance->GetCreature(GetObjectGuid(type));
         }
         inline GameObject* GetGameObject(uint32 type)
         {
-            return ObjectAccessor::GetObjectInMap<GameObject>(GetObjectGuid(type), instance, nullptr);
+            return instance->GetGameObject(GetObjectGuid(type));
         }
 
         // Called when a player successfully enters the instance.
@@ -194,6 +195,7 @@ class InstanceScript : public ZoneScript
 
         // Change active state of doors or buttons
         void DoUseDoorOrButton(ObjectGuid guid, uint32 withRestoreTime = 0, bool useAlternativeState = false);
+        void DoCloseDoorOrButton(ObjectGuid guid);
 
         // Respawns a GO having negative spawntimesecs in gameobject-table
         void DoRespawnGameObject(ObjectGuid guid, uint32 timeToDespawn = MINUTE);
@@ -222,7 +224,8 @@ class InstanceScript : public ZoneScript
 
         virtual bool SetBossState(uint32 id, EncounterState state);
         EncounterState GetBossState(uint32 id) const { return id < bosses.size() ? bosses[id].state : TO_BE_DECIDED; }
-        BossBoundaryMap const* GetBossBoundary(uint32 id) const { return id < bosses.size() ? &bosses[id].boundary : NULL; }
+        static std::string GetBossStateName(uint8 state);
+        CreatureBoundary const* GetBossBoundary(uint32 id) const { return id < bosses.size() ? &bosses[id].boundary : NULL; }
 
         // Achievement criteria additional requirements check
         // NOTE: not use this if same can be checked existed requirement types from AchievementCriteriaRequirementType
@@ -252,6 +255,7 @@ class InstanceScript : public ZoneScript
     protected:
         void SetHeaders(std::string const& dataHeaders);
         void SetBossNumber(uint32 number) { bosses.resize(number); }
+        void LoadBossBoundaries(BossBoundaryData const& data);
         void LoadDoorData(DoorData const* data);
         void LoadMinionData(MinionData const* data);
         void LoadObjectData(ObjectData const* creatureData, ObjectData const* gameObjectData);
@@ -260,11 +264,15 @@ class InstanceScript : public ZoneScript
         void AddObject(GameObject* obj, bool add);
         void AddObject(WorldObject* obj, uint32 type, bool add);
 
-        void AddDoor(GameObject* door, bool add);
+        virtual void AddDoor(GameObject* door, bool add);
         void AddMinion(Creature* minion, bool add);
 
-        void UpdateDoorState(GameObject* door);
+        virtual void UpdateDoorState(GameObject* door);
         void UpdateMinionState(Creature* minion, EncounterState state);
+
+        // Exposes private data that should never be modified unless exceptional cases.
+        // Pay very much attention at how the returned BossInfo data is modified to avoid issues.
+        BossInfo* GetBossInfo(uint32 id);
 
         // Instance Load and Save
         bool ReadSaveDataHeaders(std::istringstream& data);
@@ -273,6 +281,8 @@ class InstanceScript : public ZoneScript
         void WriteSaveDataHeaders(std::ostringstream& data);
         void WriteSaveDataBossStates(std::ostringstream& data);
         virtual void WriteSaveDataMore(std::ostringstream& /*data*/) { }
+
+        bool _SkipCheckRequiredBosses(Player const* player = nullptr) const;
 
     private:
         static void LoadObjectData(ObjectData const* creatureData, ObjectInfoMap& objectInfo);

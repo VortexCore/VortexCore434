@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -40,7 +40,7 @@
 #ifndef _RBAC_H
 #define _RBAC_H
 
-#include "Define.h"
+#include "DatabaseEnv.h"
 #include <string>
 #include <set>
 #include <map>
@@ -100,6 +100,7 @@ enum RBACPermissions
     RBAC_PERM_COMMANDS_PINFO_CHECK_PERSONAL_DATA             = 48,
     RBAC_PERM_EMAIL_CONFIRM_FOR_PASS_CHANGE                  = 49,
     RBAC_PERM_MAY_CHECK_OWN_EMAIL                            = 50,
+    RBAC_PERM_ALLOW_TWO_SIDE_TRADE                           = 51,
 
     // Free space for core permissions (till 149)
     // Roles (Permissions with delegated permissions) use 199 and descending
@@ -678,8 +679,8 @@ enum RBACPermissions
     RBAC_PERM_COMMAND_WP_UNLOAD                              = 772,
     RBAC_PERM_COMMAND_WP_RELOAD                              = 773,
     RBAC_PERM_COMMAND_WP_SHOW                                = 774,
-    RBAC_PERM_COMMAND_MODIFY_CURRENCY                        = 775, // only 4.3.4
-    RBAC_PERM_COMMAND_DEBUG_PHASE                            = 776, // only 4.3.4
+    RBAC_PERM_COMMAND_MODIFY_CURRENCY                        = 775, // only 6.x
+    RBAC_PERM_COMMAND_DEBUG_PHASE                            = 776, // only 6.x
     RBAC_PERM_COMMAND_MAILBOX                                = 777,
     RBAC_PERM_COMMAND_AHBOT                                  = 778,
     RBAC_PERM_COMMAND_AHBOT_ITEMS                            = 779,
@@ -700,6 +701,11 @@ enum RBACPermissions
     RBAC_PERM_COMMAND_GUILD_INFO                             = 794,
     RBAC_PERM_COMMAND_INSTANCE_SET_BOSS_STATE                = 795,
     RBAC_PERM_COMMAND_INSTANCE_GET_BOSS_STATE                = 796,
+    RBAC_PERM_COMMAND_PVPSTATS                               = 797,
+    RBAC_PERM_COMMAND_MODIFY_XP                              = 798,
+    // 799 - 834 6.x only
+    RBAC_PERM_COMMAND_DEBUG_LOADCELLS                        = 835,
+    RBAC_PERM_COMMAND_DEBUG_BOUNDARY                         = 836,
 
     // custom permissions 1000+
     RBAC_PERM_MAX
@@ -808,6 +814,7 @@ class RBACData
          * @return Success or failure (with reason) to grant the permission
          *
          * Example Usage:
+         * @code
          * // previously defined "RBACData* rbac" with proper initialization
          * uint32 permissionId = 2;
          * if (rbac->GrantRole(permissionId) == RBAC_IN_DENIED_LIST)
@@ -831,6 +838,7 @@ class RBACData
          * @return Success or failure (with reason) to deny the permission
          *
          * Example Usage:
+         * @code
          * // previously defined "RBACData* rbac" with proper initialization
          * uint32 permissionId = 2;
          * if (rbac->DenyRole(permissionId) == RBAC_ID_DOES_NOT_EXISTS)
@@ -855,6 +863,7 @@ class RBACData
          * @return Success or failure (with reason) to remove the permission
          *
          * Example Usage:
+         * @code
          * // previously defined "RBACData* rbac" with proper initialization
          * uint32 permissionId = 2;
          * if (rbac->RevokeRole(permissionId) == RBAC_OK)
@@ -865,6 +874,8 @@ class RBACData
 
         /// Loads all permissions assigned to current account
         void LoadFromDB();
+        PreparedQueryResultFuture LoadFromDBAsync();
+        void LoadFromDBCallback(PreparedQueryResult result);
 
         /// Sets security level
         void SetSecurityLevel(uint8 id)
@@ -892,7 +903,7 @@ class RBACData
          */
         void CalculateNewPermissions();
 
-        int32 GetRealmId() { return _realmId; }
+        int32 GetRealmId() const { return _realmId; }
 
         // Auxiliar private functions - defined to allow to maintain same code even
         // if internal structure changes.
@@ -945,9 +956,6 @@ class RBACData
          *
          * Given a list of permissions, gets all the inherited permissions
          * @param permissions The list of permissions to expand
-         *
-         * @return new list of permissions containing original permissions and
-         * all other pemissions that are linked to the original ones
          */
         void ExpandPermissions(RBACPermissionContainer& permissions);
 

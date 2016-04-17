@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -40,9 +40,8 @@ go_dragonflayer_cage
 go_tadpole_cage
 go_amberpine_outhouse
 go_hive_pod
-go_gjalerbron_cage
-go_large_gjalerbron_cage
 go_veil_skith_cage
+go_toy_train_set
 EndContentData */
 
 #include "ScriptMgr.h"
@@ -1040,69 +1039,6 @@ class go_massive_seaforium_charge : public GameObjectScript
 };
 
 /*######
-## go_gjalerbron_cage
-######*/
-
-enum OfKeysAndCages
-{
-    QUEST_ALLIANCE_OF_KEYS_AND_CAGES    = 11231,
-    QUEST_HORDE_OF_KEYS_AND_CAGES       = 11265,
-    NPC_GJALERBRON_PRISONER             = 24035,
-    SAY_FREE                            = 0,
-};
-
-class go_gjalerbron_cage : public GameObjectScript
-{
-    public:
-        go_gjalerbron_cage() : GameObjectScript("go_gjalerbron_cage") { }
-
-        bool OnGossipHello(Player* player, GameObject* go) override
-        {
-            go->UseDoorOrButton();
-            if ((player->GetTeamId() == TEAM_ALLIANCE && player->GetQuestStatus(QUEST_ALLIANCE_OF_KEYS_AND_CAGES) == QUEST_STATUS_INCOMPLETE) ||
-                (player->GetTeamId() == TEAM_HORDE && player->GetQuestStatus(QUEST_HORDE_OF_KEYS_AND_CAGES) == QUEST_STATUS_INCOMPLETE))
-            {
-                if (Creature* prisoner = go->FindNearestCreature(NPC_GJALERBRON_PRISONER, 5.0f))
-                {
-                    player->KilledMonsterCredit(NPC_GJALERBRON_PRISONER);
-
-                    prisoner->AI()->Talk(SAY_FREE);
-                    prisoner->DespawnOrUnsummon(6000);
-                }
-            }
-            return true;
-        }
-};
-
-/*########
-## go_large_gjalerbron_cage
-#####*/
-
-class go_large_gjalerbron_cage : public GameObjectScript
-{
-    public:
-        go_large_gjalerbron_cage() : GameObjectScript("go_large_gjalerbron_cage") { }
-
-        bool OnGossipHello(Player* player, GameObject* go) override
-        {
-            go->UseDoorOrButton();
-            if ((player->GetTeamId() == TEAM_ALLIANCE && player->GetQuestStatus(QUEST_ALLIANCE_OF_KEYS_AND_CAGES) == QUEST_STATUS_INCOMPLETE) ||
-                (player->GetTeamId() == TEAM_HORDE && player->GetQuestStatus(QUEST_HORDE_OF_KEYS_AND_CAGES) == QUEST_STATUS_INCOMPLETE))
-            {
-                std::list<Creature*> prisonerList;
-                GetCreatureListWithEntryInGrid(prisonerList, go, NPC_GJALERBRON_PRISONER, INTERACTION_DISTANCE);
-                for (std::list<Creature*>::const_iterator itr = prisonerList.begin(); itr != prisonerList.end(); ++itr)
-                {
-                    player->KilledMonsterCredit(NPC_GJALERBRON_PRISONER, (*itr)->GetGUID());
-                    (*itr)->DespawnOrUnsummon(6000);
-                    (*itr)->AI()->Talk(SAY_FREE);
-                }
-            }
-            return false;
-        }
-};
-
-/*########
 #### go_veil_skith_cage
 #####*/
 
@@ -1190,6 +1126,48 @@ public:
     }
 };
 
+
+enum ToyTrainSpells
+{
+    SPELL_TOY_TRAIN_PULSE       = 61551,
+};
+
+class go_toy_train_set : public GameObjectScript
+{
+    public:
+        go_toy_train_set() : GameObjectScript("go_toy_train_set") { }
+
+        struct go_toy_train_setAI : public GameObjectAI
+        {
+            go_toy_train_setAI(GameObject* go) : GameObjectAI(go), _pulseTimer(3 * IN_MILLISECONDS) { }
+        
+            void UpdateAI(uint32 diff) override
+            {
+                if (diff < _pulseTimer)
+                    _pulseTimer -= diff;
+                else
+                {
+                    go->CastSpell(nullptr, SPELL_TOY_TRAIN_PULSE, true);
+                    _pulseTimer = 6 * IN_MILLISECONDS;
+                }
+            }
+
+            // triggered on wrecker'd
+            void DoAction(int32 /*action*/) override
+            {
+                go->Delete();
+            }
+
+        private:
+            uint32 _pulseTimer;
+        };
+
+        GameObjectAI* GetAI(GameObject* go) const override
+        {
+            return new go_toy_train_setAI(go);
+        }
+};
+
 void AddSC_go_scripts()
 {
     new go_cat_figurine();
@@ -1222,9 +1200,8 @@ void AddSC_go_scripts()
     new go_amberpine_outhouse();
     new go_hive_pod();
     new go_massive_seaforium_charge();
-    new go_gjalerbron_cage();
-    new go_large_gjalerbron_cage();
     new go_veil_skith_cage();
     new go_frostblade_shrine();
     new go_midsummer_bonfire();
+    new go_toy_train_set();
 }

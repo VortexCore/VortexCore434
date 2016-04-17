@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -245,7 +245,7 @@ class boss_corborus : public CreatureScript
 
         private:
             EncounterState stateIntro;
-            uint32 countTrashingCharge;
+            uint32 countTrashingCharge =0;
         };
 
         CreatureAI* GetAI(Creature* creature) const override

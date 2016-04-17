@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -76,7 +76,7 @@ void WorldListener::HandleClose()
 
 void WorldListener::Dispatch(zmqpp::message& msg) const
 {
-    Battlenet::Header ipcHeader;
+    IPC::BattlenetComm::Header ipcHeader;
     msg >> ipcHeader;
 
     if (ipcHeader.Ipc.Channel != IPC_CHANNEL_BNET)
@@ -88,7 +88,7 @@ void WorldListener::Dispatch(zmqpp::message& msg) const
 
 void WorldListener::HandleToonOnlineStatusChange(Battlenet::RealmHandle const& realm, zmqpp::message& msg) const
 {
-    Battlenet::ToonHandle toonHandle;
+    IPC::BattlenetComm::ToonHandle toonHandle;
     bool online;
     msg >> toonHandle;
     msg >> online;

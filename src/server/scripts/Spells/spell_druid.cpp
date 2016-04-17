@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,6 +25,7 @@
 #include "ScriptMgr.h"
 #include "SpellScript.h"
 #include "SpellAuraEffects.h"
+#include "SpellHistory.h"
 #include "Containers.h"
 
 enum DruidSpells
@@ -39,6 +40,7 @@ enum DruidSpells
     SPELL_DRUID_SOLAR_ECLIPSE               = 48517,
     SPELL_DRUID_LUNAR_ECLIPSE               = 48518,
     SPELL_DRUID_ENRAGE_MOD_DAMAGE           = 51185,
+    SPELL_DRUID_ENRAGED_DEFENSE             = 70725,
     SPELL_DRUID_FERAL_CHARGE_BEAR           = 16979,
     SPELL_DRUID_FERAL_CHARGE_CAT            = 49376,
     SPELL_DRUID_GLYPH_OF_INNERVATE          = 54833,
@@ -48,6 +50,7 @@ enum DruidSpells
     SPELL_DRUID_IDOL_OF_WORSHIP             = 60774,
     SPELL_DRUID_INCREASED_MOONFIRE_DURATION = 38414,
     SPELL_DRUID_ITEM_T8_BALANCE_RELIC       = 64950,
+    SPELL_DRUID_ITEM_T10_FERAL_4P_BONUS     = 70726,
     SPELL_DRUID_KING_OF_THE_JUNGLE          = 48492,
     SPELL_DRUID_LIFEBLOOM_ENERGIZE          = 64372,
     SPELL_DRUID_LIFEBLOOM_FINAL_HEAL        = 33778,
@@ -123,7 +126,7 @@ class spell_dru_eclipse : public SpellScriptLoader
                     return;
 
                 if (caster->ToPlayer()->GetAuraOfRankedSpell(SPELL_DRUID_NATURES_GRACE))
-                    caster->ToPlayer()->RemoveSpellCooldown(SPELL_DRUID_NATURES_GRACE_TRIGGER, true);
+                    caster->ToPlayer()->GetSpellHistory()->ResetCooldown(SPELL_DRUID_NATURES_GRACE_TRIGGER, true);
             }
 
             void Register() override
@@ -254,33 +257,63 @@ class spell_dru_enrage : public SpellScriptLoader
     public:
         spell_dru_enrage() : SpellScriptLoader("spell_dru_enrage") { }
 
-        class spell_dru_enrage_SpellScript : public SpellScript
+        class spell_dru_enrage_AuraScript : public AuraScript
         {
-            PrepareSpellScript(spell_dru_enrage_SpellScript);
+            PrepareAuraScript(spell_dru_enrage_AuraScript);
 
             bool Validate(SpellInfo const* /*spellInfo*/) override
             {
                 if (!sSpellMgr->GetSpellInfo(SPELL_DRUID_KING_OF_THE_JUNGLE)
-                    || !sSpellMgr->GetSpellInfo(SPELL_DRUID_ENRAGE_MOD_DAMAGE))
+                    || !sSpellMgr->GetSpellInfo(SPELL_DRUID_ENRAGE_MOD_DAMAGE)
+                    || !sSpellMgr->GetSpellInfo(SPELL_DRUID_ENRAGED_DEFENSE)
+                    || !sSpellMgr->GetSpellInfo(SPELL_DRUID_ITEM_T10_FERAL_4P_BONUS))
                     return false;
                 return true;
             }
 
-            void OnHit()
+            void RecalculateBaseArmor()
             {
-                if (AuraEffect const* aurEff = GetHitUnit()->GetAuraEffectOfRankedSpell(SPELL_DRUID_KING_OF_THE_JUNGLE, EFFECT_0))
-                    GetHitUnit()->CastCustomSpell(SPELL_DRUID_ENRAGE_MOD_DAMAGE, SPELLVALUE_BASE_POINT0, aurEff->GetAmount(), GetHitUnit(), true);
+                Unit::AuraEffectList const& auras = GetTarget()->GetAuraEffectsByType(SPELL_AURA_MOD_BASE_RESISTANCE_PCT);
+                for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
+                {
+                    SpellInfo const* spellInfo = (*i)->GetSpellInfo();
+                    // Dire- / Bear Form (Passive)
+                    if (spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && spellInfo->SpellFamilyFlags.HasFlag(0x0, 0x0, 0x2))
+                        (*i)->RecalculateAmount();
+                }
+            }
+
+            void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            {
+                Unit* target = GetTarget();
+                if (AuraEffect const* aurEff = target->GetAuraEffectOfRankedSpell(SPELL_DRUID_KING_OF_THE_JUNGLE, EFFECT_0))
+                    target->CastCustomSpell(SPELL_DRUID_ENRAGE_MOD_DAMAGE, SPELLVALUE_BASE_POINT0, aurEff->GetAmount(), target, true);
+
+                // Item - Druid T10 Feral 4P Bonus
+                if (target->HasAura(SPELL_DRUID_ITEM_T10_FERAL_4P_BONUS))
+                    target->CastSpell(target, SPELL_DRUID_ENRAGED_DEFENSE, true);
+
+                RecalculateBaseArmor();
+            }
+
+            void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            {
+                GetTarget()->RemoveAurasDueToSpell(SPELL_DRUID_ENRAGE_MOD_DAMAGE);
+                GetTarget()->RemoveAurasDueToSpell(SPELL_DRUID_ENRAGED_DEFENSE);
+
+                RecalculateBaseArmor();
             }
 
             void Register() override
             {
-                AfterHit += SpellHitFn(spell_dru_enrage_SpellScript::OnHit);
+                AfterEffectApply += AuraEffectApplyFn(spell_dru_enrage_AuraScript::HandleApply, EFFECT_0, SPELL_AURA_PERIODIC_ENERGIZE, AURA_EFFECT_HANDLE_REAL);
+                AfterEffectRemove += AuraEffectRemoveFn(spell_dru_enrage_AuraScript::HandleRemove, EFFECT_0, SPELL_AURA_PERIODIC_ENERGIZE, AURA_EFFECT_HANDLE_REAL);
             }
         };
 
-        SpellScript* GetSpellScript() const override
+        AuraScript* GetAuraScript() const override
         {
-            return new spell_dru_enrage_SpellScript();
+            return new spell_dru_enrage_AuraScript();
         }
 };
 
@@ -1050,6 +1083,37 @@ class spell_dru_swift_flight_passive : public SpellScriptLoader
         }
 };
 
+// 33943 - Flight Form (Shapeshift)
+class spell_dru_flight_form : public SpellScriptLoader
+{
+    public:
+        spell_dru_flight_form() : SpellScriptLoader("spell_dru_flight_form") { }
+
+        class spell_dru_flight_form_SpellScript : public SpellScript
+        {
+            PrepareSpellScript(spell_dru_flight_form_SpellScript);
+
+            SpellCastResult CheckCast()
+            {
+                Unit* caster = GetCaster();
+                if (caster->IsInDisallowedMountForm())
+                    return SPELL_FAILED_NOT_SHAPESHIFT;
+
+                return SPELL_CAST_OK;
+            }
+
+            void Register() override
+            {
+                OnCheckCast += SpellCheckCastFn(spell_dru_flight_form_SpellScript::CheckCast);
+            }
+        };
+
+        SpellScript* GetSpellScript() const override
+        {
+            return new spell_dru_flight_form_SpellScript();
+        }
+};
+
 // 5217 - Tiger's Fury
 class spell_dru_tiger_s_fury : public SpellScriptLoader
 {
@@ -1256,6 +1320,7 @@ void AddSC_druid_spell_scripts()
     new spell_dru_stampede();
     new spell_dru_survival_instincts();
     new spell_dru_swift_flight_passive();
+    new spell_dru_flight_form();
     new spell_dru_tiger_s_fury();
     new spell_dru_typhoon();
     new spell_dru_t10_restoration_4p_bonus();

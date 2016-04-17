@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -44,14 +44,14 @@ bool AuctionBotSeller::Initialize()
     {
         std::stringstream includeStream(sAuctionBotConfig->GetAHBotIncludes());
         std::string temp;
-        while (getline(includeStream, temp, ','))
+        while (std::getline(includeStream, temp, ','))
             includeItems.push_back(atoi(temp.c_str()));
     }
 
     {
         std::stringstream excludeStream(sAuctionBotConfig->GetAHBotExcludes());
         std::string temp;
-        while (getline(excludeStream, temp, ','))
+        while (std::getline(excludeStream, temp, ','))
             excludeItems.push_back(atoi(temp.c_str()));
     }
 
@@ -76,17 +76,17 @@ bool AuctionBotSeller::Initialize()
 
     TC_LOG_DEBUG("ahbot", "Loading loot items for filter..");
     QueryResult result = WorldDatabase.PQuery(
-        "SELECT `item` FROM `creature_loot_template` UNION "
-        "SELECT `item` FROM `disenchant_loot_template` UNION "
-        "SELECT `item` FROM `fishing_loot_template` UNION "
-        "SELECT `item` FROM `gameobject_loot_template` UNION "
-        "SELECT `item` FROM `item_loot_template` UNION "
-        "SELECT `item` FROM `milling_loot_template` UNION "
-        "SELECT `item` FROM `pickpocketing_loot_template` UNION "
-        "SELECT `item` FROM `prospecting_loot_template` UNION "
-        "SELECT `item` FROM `reference_loot_template` UNION "
-        "SELECT `item` FROM `skinning_loot_template` UNION "
-        "SELECT `item` FROM `spell_loot_template`");
+        "SELECT `item` FROM `creature_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `disenchant_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `fishing_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `gameobject_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `item_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `milling_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `pickpocketing_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `prospecting_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `reference_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `skinning_loot_template` WHERE `Reference` = 0 UNION "
+        "SELECT `item` FROM `spell_loot_template` WHERE `Reference` = 0");
 
     if (result)
     {
@@ -207,12 +207,12 @@ bool AuctionBotSeller::Initialize()
         {
             if (sAuctionBotConfig->GetConfig(CONFIG_AHBOT_BUYPRICE_SELLER))
             {
-                if (prototype->BuyPrice == 0)
+                if (prototype->SellPrice == 0)
                     continue;
             }
             else
             {
-                if (prototype->SellPrice == 0)
+                if (prototype->BuyPrice == 0)
                     continue;
             }
         }
@@ -533,6 +533,23 @@ void AuctionBotSeller::LoadItemsQuantity(SellerConfiguration& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_GLYPH, 0);
     // ============================================================================================
 
+    // Set Stack Quantities
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_CONSUMABLE, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_CONSUMABLE));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_CONTAINER, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_CONTAINER));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_WEAPON, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_WEAPON));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_GEM, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_GEM));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_ARMOR, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_ARMOR));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_REAGENT, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_REAGENT));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_PROJECTILE, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_PROJECTILE));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_TRADE_GOODS, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_TRADEGOOD));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_GENERIC, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_GENERIC));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_RECIPE, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_RECIPE));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_QUIVER, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_QUIVER));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_QUEST, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_QUEST));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_KEY, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_KEY));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_MISCELLANEOUS, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_MISC));
+    config.SetRandomStackRatioPerClass(ITEM_CLASS_GLYPH, sAuctionBotConfig->GetConfig(CONFIG_AHBOT_CLASS_RANDOMSTACKRATIO_GLYPH));
+
     // Set the best value to get nearest amount of items wanted
     for (uint32 j = 0; j < MAX_AUCTION_QUALITY; ++j)
     {
@@ -706,7 +723,7 @@ void AuctionBotSeller::SetPricesOfItem(ItemTemplate const* itemProto, SellerConf
     if (sellPrice == 0)
         sellPrice = (buyPrice > 10 ? buyPrice / GetSellModifier(itemProto) : buyPrice);
 
-    if (!sAuctionBotConfig->GetConfig(CONFIG_AHBOT_BUYPRICE_SELLER))
+    if (sAuctionBotConfig->GetConfig(CONFIG_AHBOT_BUYPRICE_SELLER))
         buyPrice = sellPrice;
 
     uint32 basePrice = (buyPrice * stackCount * priceRatio) / (itemProto->Class == 6 ? 200 : itemProto->BuyCount) / 100;
@@ -717,6 +734,15 @@ void AuctionBotSeller::SetPricesOfItem(ItemTemplate const* itemProto, SellerConf
     basePrice = buyp * .5;
     range = buyp * .4;
     bidp = urand(basePrice - range, basePrice + range) + 1;
+}
+
+// Determines the stack size to use for the item
+uint32 AuctionBotSeller::GetStackSizeForItem(ItemTemplate const* itemProto, SellerConfiguration& config) const
+{
+    if (config.GetRandomStackRatioPerClass(ItemClass(itemProto->Class)) > urand(0, 99))
+        return urand(1, itemProto->GetMaxStackSize());
+    else
+        return 1;
 }
 
 // Determine the multiplier for the sell price of any weapon without a buy price.
@@ -906,15 +932,17 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
         items = sAuctionBotConfig->GetItemPerCycleNormal();
 
     uint32 houseid = 0;
-    uint32 auctioneer = 0;
     switch (config.GetHouseType())
     {
         case AUCTION_HOUSE_ALLIANCE:
-            houseid = 1; auctioneer = 79707; break;
+            houseid = AUCTIONHOUSE_ALLIANCE;
+            break;
         case AUCTION_HOUSE_HORDE:
-            houseid = 6; auctioneer = 4656; break;
+            houseid = AUCTIONHOUSE_HORDE;
+            break;
         default:
-            houseid = 7; auctioneer = 23442; break;
+            houseid = AUCTIONHOUSE_NEUTRAL;
+            break;
     }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(houseid);
@@ -950,7 +978,7 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
             continue;
         }
 
-        uint32 stackCount = urand(1, prototype->GetMaxStackSize());
+        uint32 stackCount = GetStackSizeForItem(prototype, config);
 
         Item* item = Item::CreateItem(itemId, stackCount);
         if (!item)
@@ -991,11 +1019,11 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
         AuctionEntry* auctionEntry = new AuctionEntry();
         auctionEntry->Id = sObjectMgr->GenerateAuctionID();
         auctionEntry->owner = 0;
-        auctionEntry->itemGUIDLow = item->GetGUIDLow();
+        auctionEntry->itemGUIDLow = item->GetGUID().GetCounter();
         auctionEntry->itemEntry = item->GetEntry();
         auctionEntry->startbid = bidPrice;
         auctionEntry->buyout = buyoutPrice;
-        auctionEntry->auctioneer = auctioneer;
+        auctionEntry->houseId = houseid;
         auctionEntry->bidder = 0;
         auctionEntry->bid = 0;
         auctionEntry->deposit = sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);

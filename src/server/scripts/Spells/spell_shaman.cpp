@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,6 +25,7 @@
 #include "ScriptMgr.h"
 #include "GridNotifiers.h"
 #include "Unit.h"
+#include "SpellHistory.h"
 #include "SpellScript.h"
 #include "SpellAuraEffects.h"
 
@@ -60,7 +61,8 @@ enum ShamanSpells
     SPELL_SHAMAN_TOTEM_EARTHBIND_TOTEM          = 6474,
     SPELL_SHAMAN_TOTEM_EARTHEN_POWER            = 59566,
     SPELL_SHAMAN_TOTEM_HEALING_STREAM_HEAL      = 52042,
-    SPELL_SHAMAN_TIDAL_WAVES                    = 53390
+    SPELL_SHAMAN_TIDAL_WAVES                    = 53390,
+    SPELL_SHAMAN_TOTEMIC_MASTERY                = 38437
 };
 
 enum ShamanSpellIcons
@@ -310,7 +312,7 @@ class spell_sha_earth_shield : public SpellScriptLoader
             {
                 //! HACK due to currenct proc system implementation
                 if (Player* player = GetTarget()->ToPlayer())
-                    if (player->HasSpellCooldown(SPELL_SHAMAN_EARTH_SHIELD_HEAL))
+                    if (player->GetSpellHistory()->HasCooldown(SPELL_SHAMAN_EARTH_SHIELD_HEAL))
                         return false;
                 return true;
             }
@@ -323,7 +325,7 @@ class spell_sha_earth_shield : public SpellScriptLoader
 
                 /// @hack: due to currenct proc system implementation
                 if (Player* player = GetTarget()->ToPlayer())
-                    player->AddSpellCooldown(SPELL_SHAMAN_EARTH_SHIELD_HEAL, 0, time(NULL) + 3);
+                    player->GetSpellHistory()->AddCooldown(SPELL_SHAMAN_EARTH_SHIELD_HEAL, 0, std::chrono::seconds(3));
             }
 
             void Register() override
@@ -462,7 +464,7 @@ class spell_sha_feedback : public SpellScriptLoader
             {
                 PreventDefaultAction(); // will prevent default effect execution
                 if (Player* target = GetTarget()->ToPlayer())
-                    target->ModifySpellCooldown(SPELL_SHAMAN_ELEMENTAL_MASTERY, aurEff->GetBaseAmount());
+                    target->GetSpellHistory()->ModifyCooldown(SPELL_SHAMAN_ELEMENTAL_MASTERY, aurEff->GetBaseAmount());
             }
 
             void Register() override
@@ -870,7 +872,7 @@ class spell_sha_item_t10_elemental_2p_bonus : public SpellScriptLoader
             {
                 PreventDefaultAction();
                 if (Player* target = GetTarget()->ToPlayer())
-                    target->ModifySpellCooldown(SPELL_SHAMAN_ELEMENTAL_MASTERY, -aurEff->GetAmount());
+                    target->GetSpellHistory()->ModifyCooldown(SPELL_SHAMAN_ELEMENTAL_MASTERY, -aurEff->GetAmount());
             }
 
             void Register() override
@@ -987,7 +989,7 @@ class spell_sha_lava_surge_proc : public SpellScriptLoader
 
             void HandleDummy(SpellEffIndex /*effIndex*/)
             {
-                GetCaster()->ToPlayer()->RemoveSpellCooldown(SPELL_SHAMAN_LAVA_BURST, true);
+                GetCaster()->ToPlayer()->GetSpellHistory()->ResetCooldown(SPELL_SHAMAN_LAVA_BURST, true);
             }
 
             void Register() override
@@ -1055,7 +1057,7 @@ class spell_sha_nature_guardian : public SpellScriptLoader
             {
                 //! HACK due to currenct proc system implementation
                 if (Player* player = GetTarget()->ToPlayer())
-                    if (player->HasSpellCooldown(GetSpellInfo()->Id))
+                    if (player->GetSpellHistory()->HasCooldown(GetSpellInfo()->Id))
                         return false;
 
                 return GetTarget()->HealthBelowPctDamaged(30, eventInfo.GetDamageInfo()->GetDamage());
@@ -1072,7 +1074,7 @@ class spell_sha_nature_guardian : public SpellScriptLoader
                     eventInfo.GetProcTarget()->getThreatManager().modifyThreatPercent(GetTarget(), -10);
 
                 if (Player* player = GetTarget()->ToPlayer())
-                    player->AddSpellCooldown(GetSpellInfo()->Id, 0, time(NULL) + aurEff->GetSpellInfo()->Effects[EFFECT_1].CalcValue());
+                    player->GetSpellHistory()->AddCooldown(GetSpellInfo()->Id, 0, std::chrono::seconds(GetSpellInfo()->Effects[EFFECT_1].CalcValue()));
             }
 
             void Register() override
@@ -1230,6 +1232,46 @@ class spell_sha_tidal_waves : public SpellScriptLoader
         }
 };
 
+// 38443 - Totemic Mastery (Tier 6 - 2P)
+class spell_sha_totemic_mastery : public SpellScriptLoader
+{
+public:
+    spell_sha_totemic_mastery() : SpellScriptLoader("spell_sha_totemic_mastery") { }
+
+    class spell_sha_totemic_mastery_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_sha_totemic_mastery_AuraScript);
+
+        bool Validate(SpellInfo const* /*spellInfo*/) override
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_SHAMAN_TOTEMIC_MASTERY))
+                return false;
+            return true;
+        }
+
+        void HandleDummy(AuraEffect const* /*aurEff*/)
+        {
+            Unit* target = GetTarget();
+            for (uint8 i = SUMMON_SLOT_TOTEM; i < MAX_TOTEM_SLOT; ++i)
+                if (!target->m_SummonSlot[i])
+                    return;
+
+            target->CastSpell(target, SPELL_SHAMAN_TOTEMIC_MASTERY, true);
+            PreventDefaultAction();
+        }
+
+        void Register() override
+        {
+            OnEffectPeriodic += AuraEffectPeriodicFn(spell_sha_totemic_mastery_AuraScript::HandleDummy, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
+        }
+    };
+
+    AuraScript* GetAuraScript() const override
+    {
+        return new spell_sha_totemic_mastery_AuraScript();
+    }
+};
+
 void AddSC_shaman_spell_scripts()
 {
     new spell_sha_ancestral_awakening();
@@ -1259,4 +1301,5 @@ void AddSC_shaman_spell_scripts()
     new spell_sha_telluric_currents();
     new spell_sha_thunderstorm();
     new spell_sha_tidal_waves();
+    new spell_sha_totemic_mastery();
 }

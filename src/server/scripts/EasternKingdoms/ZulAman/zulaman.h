@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,12 +25,12 @@ uint32 const EncounterCount = 6;
 enum DataTypes
 {
     // BossState
-    DATA_AKILZON                = 0,
-    DATA_NALORAKK               = 1,
-    DATA_JANALAI                = 2,
-    DATA_HALAZZI                = 3,
-    DATA_HEXLORD                = 4,
-    DATA_DAAKARA                = 5,
+    DATA_AKILZONEVENT                = 0,
+    DATA_NALORAKKEVENT               = 1,
+    DATA_JANALAIEVENT                = 2,
+    DATA_HALAZZIEVENT                = 3,
+    DATA_HEXLORDEVENT                = 4,
+    DATA_DAAKARAEVENT                = 5,
 
     // Data64
     DATA_HEXLORD_TRIGGER,

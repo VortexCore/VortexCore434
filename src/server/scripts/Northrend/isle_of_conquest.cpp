@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -161,19 +161,6 @@ class spell_ioc_gunship_portal : public SpellScriptLoader
                  * Position: X: 7.305609 Y: -0.095246 Z: 34.51022 O: 0
                  */
                 caster->TeleportTo(GetHitCreature()->GetWorldLocation(), TELE_TO_NOT_LEAVE_TRANSPORT);
-                /*
-                 * HACK: This aura should be added by 20212 and 20213 but can't find any SMSG_SPELL_GO. Could't find their position.
-                 * ServerToClient: SMSG_AURA_UPDATE (0x0072)
-                 * [0] CasterGUID: Full: xxxxx Type: Unit Entry: 20212 Low: xxx
-                 * [0] Flags: None (0)
-                 * [0] Caster Level: 60
-                 * [0] Spell ID: 66656
-                 * [0] Charges: 0
-                 * [0] Effect Mask: 1
-                 * [0] Slot: 37
-                 * Guid: Full: xxxxx Type: Player2 Low: xxxxx
-                 */
-                caster->AddAura(SPELL_PARACHUTE, caster);
             }
 
             void Register() override
@@ -219,7 +206,7 @@ class spell_ioc_parachute_ic : public SpellScriptLoader
 class StartLaunchEvent : public BasicEvent
 {
     public:
-        StartLaunchEvent(float x, float y, float z, uint32 lowGuid) : _x(x), _y(y), _z(z), _lowGuid(lowGuid)
+        StartLaunchEvent(Position const& pos, ObjectGuid::LowType lowGuid) : _pos(pos), _lowGuid(lowGuid)
         {
         }
 
@@ -231,16 +218,16 @@ class StartLaunchEvent : public BasicEvent
 
             player->AddAura(SPELL_LAUNCH_NO_FALLING_DAMAGE, player); // prevents falling damage
             float speedZ = 10.0f;
-            float dist = player->GetExactDist2d(_x, _y);
+            float dist = player->GetExactDist2d(&_pos);
 
             player->ExitVehicle();
-            player->GetMotionMaster()->MoveJump(_x, _y, _z, dist, speedZ);
+            player->GetMotionMaster()->MoveJump(_pos, dist, speedZ, EVENT_JUMP, true);
             return true;
         }
 
     private:
-        float _x, _y, _z;
-        uint32 _lowGuid;
+        Position _pos;
+        ObjectGuid::LowType _lowGuid;
 };
 
 class spell_ioc_launch : public SpellScriptLoader
@@ -257,11 +244,7 @@ class spell_ioc_launch : public SpellScriptLoader
                 if (!GetCaster()->ToCreature() || !GetExplTargetDest())
                     return;
 
-                float x, y, z;
-                x = GetExplTargetDest()->GetPositionX();
-                y = GetExplTargetDest()->GetPositionY();
-                z = GetExplTargetDest()->GetPositionZ();
-                GetCaster()->ToCreature()->m_Events.AddEvent(new StartLaunchEvent(x, y, z, GetHitPlayer()->GetGUIDLow()), GetCaster()->ToCreature()->m_Events.CalculateTime(2500));
+                GetCaster()->ToCreature()->m_Events.AddEvent(new StartLaunchEvent(*GetExplTargetDest(), GetHitPlayer()->GetGUID().GetCounter()), GetCaster()->ToCreature()->m_Events.CalculateTime(2500));
             }
 
             void Register() override

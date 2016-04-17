@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,6 +20,7 @@
 #define DBCSTORE_H
 
 #include "DBCFileLoader.h"
+#include "DBStorageIterator.h"
 #include "Log.h"
 #include "Field.h"
 #include "DatabaseWorkerPool.h"
@@ -72,8 +73,11 @@ private:
 template<class T>
 class DBCStorage
 {
-    typedef std::list<char*> StringPoolList;
+        typedef std::list<char*> StringPoolList;
+
     public:
+        typedef DBStorageIterator<T> iterator;
+
         explicit DBCStorage(char const* f)
             : fmt(f), nCount(0), fieldCount(0), dataTable(NULL)
         {
@@ -85,6 +89,13 @@ class DBCStorage
         T const* LookupEntry(uint32 id) const
         {
             return (id >= nCount) ? NULL : indexTable.asT[id];
+        }
+
+        T const* AssertEntry(uint32 id) const
+        {
+            T const* entry = LookupEntry(id);
+            ASSERT(entry);
+            return entry;
         }
 
         uint32  GetNumRows() const { return nCount; }
@@ -288,6 +299,9 @@ class DBCStorage
 
             nCount = 0;
         }
+
+        iterator begin() { return iterator(indexTable.asT, nCount); }
+        iterator end() { return iterator(indexTable.asT, nCount, nCount); }
 
     private:
         char const* fmt;

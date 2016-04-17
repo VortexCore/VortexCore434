@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -292,7 +292,7 @@ public:
                 break;
         }
         player->CLOSE_GOSSIP_MENU();
-        ai->SetDespawnAtFar(true);
+        ai->SetDespawnAtFar(false);
         creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
         return true;
     }
@@ -421,7 +421,7 @@ public:
             gossipStep = 0;
         }
 
-        void AttackStart(Unit* who)
+        void AttackStart(Unit* who) override
         {
             if (who && !who->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC))
                 npc_escortAI::AttackStart(who);
@@ -574,7 +574,6 @@ public:
                     break;
                 case 45:
                     SetRun(true);
-                    SetDespawnAtFar(false);
                     gossipStep = 4;
                     me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
                     SetHoldState(true);
@@ -818,7 +817,7 @@ public:
                                 cityman1->AI()->Talk(SAY_PHASE204);
                                 cityman1->SetTarget(me->GetGUID());
                                 if (Creature* cityman0 = ObjectAccessor::GetCreature(*me, citymenGUID[0]))
-                                    cityman0->Kill(cityman0);
+                                    cityman0->KillSelf();
                                 me->SetTarget(citymenGUID[1]);
                             }
                             JumpToNextStep(0);
@@ -830,7 +829,7 @@ public:
                             break;
                         case 33:
                             if (Creature* cityman1 = ObjectAccessor::GetCreature(*me, citymenGUID[1]))
-                                cityman1->Kill(cityman1);
+                                cityman1->KillSelf();
                             JumpToNextStep(1000);
                             break;
                         case 34:
@@ -901,7 +900,6 @@ public:
                             instance->SetBossState(DATA_ARTHAS, IN_PROGRESS);
 
                             me->SetReactState(REACT_DEFENSIVE);
-                            SetDespawnAtFar(false);
                             JumpToNextStep(5000);
                             break;
                         // Summon wave groups - start the Infinite Corruptor timer

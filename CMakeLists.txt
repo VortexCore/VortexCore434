@@ -1,4 +1,4 @@
-# Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+# Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -50,6 +50,8 @@ endif()
 
 include(CheckPlatform)
 
+include(GroupSources)
+
 # basic packagesearching and setup (further support will be needed, this is a preliminary release!)
 set(OPENSSL_EXPECTED_VERSION 1.0.0)
 
@@ -57,9 +59,9 @@ find_package(PCHSupport)
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(ZMQ REQUIRED)
+find_package(MySQL)
 
 include(ConfigureBoost)
-find_package(MySQL REQUIRED)
 
 if( UNIX )
   find_package(Readline)

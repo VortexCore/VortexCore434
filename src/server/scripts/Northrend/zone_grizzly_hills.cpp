@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -239,7 +239,7 @@ public:
             }
         }
 
-        void EnterEvadeMode() override { }
+        void EnterEvadeMode(EvadeReason /*why*/) override { }
 
         void MoveInLineOfSight(Unit* /*who*/) override { }
 
@@ -762,7 +762,7 @@ public:
                 }
             }
 
-            void sGossipSelect(Player* player, uint32 /*sender*/, uint32 /*action*/) override
+            void sGossipSelect(Player* player, uint32 /*menuId*/, uint32 /*gossipListId*/) override
             {
                 DoCast(player, SPELL_SUMMON_ASHWOOD_BRAND);
             }
@@ -826,11 +826,11 @@ class spell_infected_worgen_bite : public SpellScriptLoader
 {
     public:
         spell_infected_worgen_bite() : SpellScriptLoader("spell_infected_worgen_bite") { }
-        
+
         class spell_infected_worgen_bite_AuraScript : public AuraScript
         {
             PrepareAuraScript(spell_infected_worgen_bite_AuraScript);
-            
+
             void HandleAfterEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
                 Unit* target = GetTarget();
@@ -841,7 +841,7 @@ class spell_infected_worgen_bite : public SpellScriptLoader
                         target->CastSpell(target, SPELL_WORGENS_CALL, true);
                     }
             }
-            
+
             void Register() override
             {
                 AfterEffectApply += AuraEffectApplyFn(spell_infected_worgen_bite_AuraScript::HandleAfterEffectApply, EFFECT_1, SPELL_AURA_PERIODIC_DAMAGE, AURA_EFFECT_HANDLE_REAPPLY);

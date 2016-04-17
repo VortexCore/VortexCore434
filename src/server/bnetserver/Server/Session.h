@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +22,8 @@
 #include "BattlenetPacketCrypt.h"
 #include "Socket.h"
 #include "BigNumber.h"
+#include "Callback.h"
+#include "MPSCQueue.h"
 #include <memory>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -52,6 +54,32 @@ namespace Battlenet
         Read = 0x4000
     };
 
+    struct AccountInfo
+    {
+        void LoadResult(Field* fields);
+
+        uint32 Id;
+        std::string Login;
+        bool IsLockedToIP;
+        std::string LockCountry;
+        std::string LastIP;
+        uint32 FailedLogins;
+        bool IsBanned;
+        bool IsPermanentlyBanned;
+    };
+
+    struct GameAccountInfo
+    {
+        void LoadResult(Field* fields);
+
+        uint32 Id;
+        std::string Name;
+        std::string DisplayName;
+        bool IsBanned;
+        bool IsPermanentlyBanned;
+        AccountTypes SecurityLevel;
+    };
+
     class Session : public Socket<Session>
     {
         typedef Socket<Session> BattlenetSocket;
@@ -69,7 +97,7 @@ namespace Battlenet
 
         // Connection
         void HandlePing(Connection::Ping const& ping);
-        void HandleEnableEncryption(Connection::EnableEncryption const& enableEncryption);
+        void HandleEnableEncryption(Connection::EnableEncryption& enableEncryption);
         void HandleLogoutRequest(Connection::LogoutRequest const& logoutRequest);
         void HandleConnectionClosing(Connection::ConnectionClosing const& connectionClosing);
 
@@ -85,11 +113,12 @@ namespace Battlenet
         void HandleGetStreamItemsRequest(Cache::GetStreamItemsRequest const& getStreamItemsRequest);
 
         void Start() override;
+        bool Update() override;
 
-        void UpdateRealms(std::vector<Realm const*>& realms, std::vector<RealmId>& deletedRealms);
+        void UpdateRealms(std::vector<Realm const*>& realms, std::vector<RealmHandle>& deletedRealms);
 
-        uint32 GetAccountId() const { return _accountId; }
-        uint32 GetGameAccountId() const { return _gameAccountId; }
+        uint32 GetAccountId() const { return _accountInfo->Id; }
+        uint32 GetGameAccountId() const { return _gameAccountInfo->Id; }
 
         bool IsSubscribedToRealmListUpdates() const { return _subscribedToRealmListUpdates; }
 
@@ -104,6 +133,11 @@ namespace Battlenet
         typedef bool(Session::*ModuleHandler)(BitStream* dataStream, ServerPacket** response);
         static ModuleHandler const ModuleHandlers[MODULE_COUNT];
 
+        void CheckIpCallback(PreparedQueryResult result);
+        void HandleLogonRequestCallback(PreparedQueryResult result);
+        void HandleResumeRequestCallback(PreparedQueryResult result);
+        void HandleListSubscribeRequestCallback(PreparedQueryResult result);
+
         bool HandlePasswordModule(BitStream* dataStream, ServerPacket** response);
         bool HandleSelectGameAccountModule(BitStream* dataStream, ServerPacket** response);
         bool HandleRiskFingerprintModule(BitStream* dataStream, ServerPacket** response);
@@ -113,14 +147,15 @@ namespace Battlenet
         WoWRealm::ListUpdate* BuildListUpdate(Realm const* realm) const;
         std::string GetClientInfo() const;
 
-        uint32 _accountId;
-        std::string _accountName;
+        AccountInfo* _accountInfo;
+        GameAccountInfo* _gameAccountInfo;      // Points at selected game account (inside _gameAccounts)
+        std::vector<GameAccountInfo> _gameAccounts;
+
         std::string _locale;
         std::string _os;
         uint32 _build;
-        uint32 _gameAccountId;
-        std::string _gameAccountName;
-        AccountTypes _accountSecurityLevel;
+
+        std::string _ipCountry;
 
         BigNumber N;
         BigNumber g;
@@ -138,9 +173,20 @@ namespace Battlenet
 
         std::queue<ModuleType> _modulesWaitingForData;
 
+        struct EncryptableBuffer
+        {
+            MessageBuffer Buffer;
+            bool Encrypt;
+        };
+
+        MPSCQueue<EncryptableBuffer> _bufferQueue;
+
         PacketCrypt _crypt;
         bool _authed;
         bool _subscribedToRealmListUpdates;
+
+        PreparedQueryResultFuture _queryFuture;
+        std::function<void(PreparedQueryResult)> _queryCallback;
     };
 
 }

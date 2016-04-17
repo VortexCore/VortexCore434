@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -102,7 +102,7 @@ void GuildFinderMgr::LoadMembershipRequests()
         std::string comment = fields[5].GetString();
         uint32 submitTime   = fields[6].GetUInt32();
 
-        MembershipRequest request(ObjectGuid(HIGHGUID_PLAYER, playerId), guildId, availability, classRoles, interests, comment, time_t(submitTime));
+        MembershipRequest request(ObjectGuid(HighGuid::Player, playerId), guildId, availability, classRoles, interests, comment, time_t(submitTime));
 
         _membershipRequests[guildId].push_back(request);
 

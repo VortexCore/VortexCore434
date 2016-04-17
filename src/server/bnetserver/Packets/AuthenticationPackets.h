@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -75,7 +75,7 @@ namespace Battlenet
             std::string Locale;
             std::vector<Component> Components;
             std::string Login;
-            uint8 Region;
+            uint8 Region =0;
             std::string GameAccountName;
         };
 
@@ -133,8 +133,8 @@ namespace Battlenet
         {
         public:
             LogonResponse() : ServerPacket(PacketHeader(SMSG_LOGON_RESPONSE, AUTHENTICATION)),
-                PingTimeout(120000), FirstName(""), LastName(""), AccountId(0), Region(2), Flags(0),
-                GameAccountRegion(2), GameAccountName(""), FailedLogins(0)
+                PingTimeout(120000), AccountId(0), Region(2), Flags(0),
+                GameAccountRegion(2), GameAccountFlags(0), FailedLogins(0)
             {
             }
 

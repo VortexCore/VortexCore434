@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -81,12 +81,12 @@ struct MembershipRequest
         uint8 GetAvailability() const  { return _availability; }
         uint8 GetClassRoles() const    { return _classRoles; }
         uint8 GetInterests() const     { return _interests; }
-        uint8 GetClass() const         { return sWorld->GetCharacterNameData(GetPlayerGUID())->m_class; }
-        uint8 GetLevel() const         { return sWorld->GetCharacterNameData(GetPlayerGUID())->m_level; }
+        uint8 GetClass() const         { return sWorld->GetCharacterInfo(GetPlayerGUID())->Class; }
+        uint8 GetLevel() const         { return sWorld->GetCharacterInfo(GetPlayerGUID())->Level; }
         time_t GetSubmitTime() const   { return _time; }
         time_t GetExpiryTime() const   { return time_t(_time + 30 * 24 * 3600); } // Adding 30 days
         std::string const& GetComment() const { return _comment; }
-        std::string const& GetName() const    { return sWorld->GetCharacterNameData(GetPlayerGUID())->m_name; }
+        std::string const& GetName() const    { return sWorld->GetCharacterInfo(GetPlayerGUID())->Name; }
     private:
         std::string _comment;
 

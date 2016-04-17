@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -114,7 +114,7 @@ class boss_alizabal : public CreatureScript
                     Talk(SAY_SLAY);
             }
 
-            void EnterEvadeMode() override
+            void EnterEvadeMode(EvadeReason /*why*/) override
             {
                 instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
                 me->GetMotionMaster()->MoveTargetedHome();
@@ -251,9 +251,9 @@ class boss_alizabal : public CreatureScript
             }
 
         private:
-            bool _intro;
-            bool _hate;
-            bool _skewer;
+            bool _intro =false;
+            bool _hate =false;
+            bool _skewer =false;
 
         };
 

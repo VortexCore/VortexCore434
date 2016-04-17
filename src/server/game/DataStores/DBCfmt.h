@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@ char const Achievementfmt[] = "niixsxiixixxii";
 const std::string CustomAchievementfmt = "pppaaaapapaapp";
 const std::string CustomAchievementIndex = "ID";
 char const AchievementCriteriafmt[] = "niiiliiiisiiiiixxiiiiii";
-char const AreaTableEntryfmt[] = "iiinixxxxxisiiiiiffixxxxxx";
+char const AreaTableEntryfmt[] = "niiiixxxxxisiiiiiffixxxxxx";
 char const AreaGroupEntryfmt[] = "niiiiiii";
 char const AreaPOIEntryfmt[] = "niiiiiiiiiiiffixixxixx";
 char const AreaTriggerEntryfmt[] = "nifffxxxfffff";
@@ -37,6 +37,7 @@ char const BannedAddOnsfmt[] = "nxxxxxxxxxx";
 char const BarberShopStyleEntryfmt[] = "nixxxiii";
 char const BattlemasterListEntryfmt[] = "niiiiiiiiixsiiiixxxx";
 char const CharStartOutfitEntryfmt[] = "dbbbXiiiiiiiiiiiiiiiiiiiiiiiixxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxii";
+char const CharSectionsEntryfmt[] = "diiixxxiii";
 char const CharTitlesEntryfmt[] = "nxssix";
 char const ChatChannelsEntryfmt[] = "nixsx";
 char const ChrClassesEntryfmt[] = "nixsxxxixiiiii";
@@ -45,7 +46,7 @@ char const ChrClassesXPowerTypesfmt[] = "nii";
 char const CinematicSequencesEntryfmt[] = "nxxxxxxxxx";
 char const CreatureDisplayInfofmt[] = "nixifxxxxxxxxxxxx";
 char const CreatureDisplayInfoExtrafmt[] = "diixxxxxxxxxxxxxxxxxx";
-char const CreatureModelDatafmt[] = "nixxxxxxxxxxxxffxxxxxxxxxxxxxxx";
+char const CreatureModelDatafmt[] = "nisxxxxxxxxxxxffxxxxxxxxxxxxxxx";
 char const CreatureFamilyfmt[] = "nfifiiiiixsx";
 char const CreatureSpellDatafmt[] = "niiiixxxx";
 char const CreatureTypefmt[] = "nxx";
@@ -56,6 +57,7 @@ char const DurabilityCostsfmt[] = "niiiiiiiiiiiiiiiiiiiiiiiiiiiii";
 char const DurabilityQualityfmt[] = "nf";
 char const EmotesEntryfmt[] = "nxxiiixx";
 char const EmotesTextEntryfmt[] = "nxixxxxxxxxxxxxxxxx";
+char const EmotesTextSoundEntryfmt[] = "niiii";
 char const FactionEntryfmt[] = "niiiiiiiiiiiiiiiiiiffixsxi";
 char const FactionTemplateEntryfmt[] = "niiiiiiiiiiiii";
 char const GameObjectDisplayInfofmt[] = "nsxxxxxxxxxxffffffxxx";
@@ -107,6 +109,8 @@ char const MailTemplateEntryfmt[] = "nxs";
 char const MapEntryfmt[] = "nxiixxsixxixiffxiiii";
 char const MapDifficultyEntryfmt[] = "diisiix";
 char const MovieEntryfmt[] = "nxxx";
+char const NamesProfanityEntryfmt[] = "dsi";
+char const NamesReservedEntryfmt[] = "dsi";
 char const MountCapabilityfmt[] = "niiiiiii";
 char const MountTypefmt[] = "niiiiiiiiiiiiiiiiiiiiiiii";
 char const NameGenfmt[] = "dsii";
@@ -159,7 +163,7 @@ char const SpellClassOptionsEntryfmt[] = "dxiiiix";
 char const SpellCooldownsEntryfmt[] = "diii";
 char const SpellLevelsEntryfmt[] = "diii";
 char const SpellRuneCostfmt[] = "niiii";
-char const SpellShapeshiftEntryfmt[] = "nixixx";
+char const SpellShapeshiftEntryfmt[] = "niiiix";
 char const SpellShapeshiftFormfmt[] = "nxxiixiiixxiiiiiiiixx";
 char const StableSlotPricesfmt[] = "ni";
 char const SummonPropertiesfmt[] = "niiiii";

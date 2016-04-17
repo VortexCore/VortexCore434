@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -1408,11 +1408,7 @@ class WorldSession;
 
 typedef void(WorldSession::*pOpcodeHandler)(WorldPacket& recvPacket);
 
-#if defined(__GNUC__)
-#pragma pack(1)
-#else
 #pragma pack(push, 1)
-#endif
 
 struct OpcodeHandler
 {
@@ -1460,16 +1456,12 @@ class OpcodeTable
 
 extern OpcodeTable opcodeTable;
 
-#if defined(__GNUC__)
-#pragma pack()
-#else
 #pragma pack(pop)
-#endif
 
 void InitOpcodes();
 
 /// Lookup opcode name for human understandable logging
-inline std::string GetOpcodeNameForLogging(Opcodes id)
+inline std::string GetOpcodeNameForLogging(uint32 id)
 {
     uint32 opcode = uint32(id);
     std::ostringstream ss;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -179,7 +179,7 @@ enum SpellCustomAttributes
     SPELL_ATTR0_CU_CONE_LINE                     = 0x00000004,
     SPELL_ATTR0_CU_SHARE_DAMAGE                  = 0x00000008,
     SPELL_ATTR0_CU_NO_INITIAL_THREAT             = 0x00000010,
-    SPELL_ATTR0_CU_AURA_CC                       = 0x00000040,
+    SPELL_ATTR0_CU_DONT_BREAK_STEALTH            = 0x00000040,
     SPELL_ATTR0_CU_DIRECT_DAMAGE                 = 0x00000100,
     SPELL_ATTR0_CU_CHARGE                        = 0x00000200,
     SPELL_ATTR0_CU_PICKPOCKET                    = 0x00000400,
@@ -189,6 +189,7 @@ enum SpellCustomAttributes
     SPELL_ATTR0_CU_IGNORE_ARMOR                  = 0x00008000,
     SPELL_ATTR0_CU_REQ_TARGET_FACING_CASTER      = 0x00010000,
     SPELL_ATTR0_CU_REQ_CASTER_BEHIND_TARGET      = 0x00020000,
+    SPELL_ATTR0_CU_ALLOW_INFLIGHT_TARGET         = 0x00040000,
 
     SPELL_ATTR0_CU_NEGATIVE                      = SPELL_ATTR0_CU_NEGATIVE_EFF0 | SPELL_ATTR0_CU_NEGATIVE_EFF1 | SPELL_ATTR0_CU_NEGATIVE_EFF2
 };
@@ -252,7 +253,7 @@ public:
     uint32    ItemType;
     uint32    TriggerSpell;
     flag96    SpellClassMask;
-    std::list<Condition*>* ImplicitTargetConditions;
+    std::vector<Condition*>* ImplicitTargetConditions;
     // SpellScalingEntry
     float     ScalingMultiplier;
     float     DeltaScalingMultiplier;
@@ -317,8 +318,8 @@ public:
     uint32 AttributesEx9;
     uint32 AttributesEx10;
     uint32 AttributesCu;
-    uint32 Stances;
-    uint32 StancesNot;
+    uint64 Stances;
+    uint64 StancesNot;
     uint32 Targets;
     uint32 TargetCreatureType;
     uint32 RequiresSpellFocus;
@@ -427,6 +428,19 @@ public:
     bool HasAura(AuraType aura) const;
     bool HasAreaAuraEffect() const;
 
+    inline bool HasAttribute(SpellAttr0 attribute)  const { return !!(Attributes & attribute);     }
+    inline bool HasAttribute(SpellAttr1 attribute)  const { return !!(AttributesEx & attribute);   }
+    inline bool HasAttribute(SpellAttr2 attribute)  const { return !!(AttributesEx2 & attribute);  }
+    inline bool HasAttribute(SpellAttr3 attribute)  const { return !!(AttributesEx3 & attribute);  }
+    inline bool HasAttribute(SpellAttr4 attribute)  const { return !!(AttributesEx4 & attribute);  }
+    inline bool HasAttribute(SpellAttr5 attribute)  const { return !!(AttributesEx5 & attribute);  }
+    inline bool HasAttribute(SpellAttr6 attribute)  const { return !!(AttributesEx6 & attribute);  }
+    inline bool HasAttribute(SpellAttr7 attribute)  const { return !!(AttributesEx7 & attribute);  }
+    inline bool HasAttribute(SpellAttr8 attribute)  const { return !!(AttributesEx8 & attribute);  }
+    inline bool HasAttribute(SpellAttr9 attribute)  const { return !!(AttributesEx9 & attribute);  }
+    inline bool HasAttribute(SpellAttr10 attribute) const { return !!(AttributesEx10 & attribute); }
+    inline bool HasAttribute(SpellCustomAttributes customAttribute) const { return !!(AttributesCu & customAttribute); }
+
     bool IsExplicitDiscovery() const;
     bool IsLootCrafting() const;
     bool IsQuestTame() const;
@@ -460,6 +474,7 @@ public:
     bool IsBreakingStealth() const;
     bool IsRangedWeaponSpell() const;
     bool IsAutoRepeatRangedSpell() const;
+    bool HasInitialAggro() const;
 
     bool IsAffectedBySpellMods() const;
     bool IsAffectedBySpellMod(SpellModifier const* mod) const;
